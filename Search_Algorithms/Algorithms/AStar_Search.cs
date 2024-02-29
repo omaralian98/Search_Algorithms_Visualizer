@@ -1,4 +1,6 @@
-﻿namespace Search_Algorithms.Algorithms;
+﻿using System.Collections.Generic;
+
+namespace Search_Algorithms.Algorithms;
 public class AStarSearch<TSearch> where TSearch : ISearchable
 {
     public delegate int MyFunction(TSearch game);
@@ -10,7 +12,7 @@ public class AStarSearch<TSearch> where TSearch : ISearchable
     /// <param name="heuristic">the heuristic to be used</param>
     /// <returns>SearchResult</returns>
     /// <exception cref="OperationCanceledException"></exception>
-    public async Task<SearchResult<TSearch>> FindPath(TSearch initial, MyFunction heuristic, CancellationToken token)
+    public async Task<SearchResult<TSearch>> FindPath(TSearch initial, MyFunction heuristic, CancellationToken token = default, int delay = 0)
     {
         long DiscoveredNodes = 1;
         long VisitedNodes = 1;
@@ -24,13 +26,17 @@ public class AStarSearch<TSearch> where TSearch : ISearchable
         visitedWithCost[initial.ToString()] = 0;
         g[initial] = 0;
         initial.Parent = null;
+        initial.IsVisited = true;
+        Task del = Task.Delay(delay);
         TSearch? result = await Task.Run(() =>
         {
             while (list.Count > 0)
             {
+                Thread.Sleep(delay);
                 if (token.IsCancellationRequested) throw new TaskCanceledException("Operation was canceled.");
                 VisitedNodes++;
                 TSearch current = list.Values[0];
+                current.IsVisited = true;
                 if (current.IsOver())
                 {
                     return Task.FromResult(current);
@@ -65,12 +71,14 @@ public class AStarSearch<TSearch> where TSearch : ISearchable
 
     private static List<TSearch> ConstructPath(TSearch init)
     {
+        if (init is null) return [];
         var path = new List<TSearch>();
         while (init.Parent is not null)
         {
             path.Add(init);
             init = (TSearch)init.Parent;
         }
+        path.Add(init);
         path.Reverse();
         return path;
     }
