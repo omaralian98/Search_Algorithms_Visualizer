@@ -5,22 +5,28 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Form"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800" WindowStartupLocation="CenterScreen" StateChanged="Window_StateChanged">
+        Title="MainWindow" Height="450" Width="800" WindowStartupLocation="CenterScreen" StateChanged="Window_StateChanged"
+        WindowState="Maximized">
     <Window.Resources>
     </Window.Resources>
-    <Grid>
-        <Button Click="AddRandomObstacles" Width="50" Height="21" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,175,0,0">Add Obstacles</Button>
+    <Grid Background="PaleVioletRed">
+        <Button Click="AddRandomObstacles" Width="87" Height="25" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,234,0,0">Add Obstacles</Button>
         <Label VerticalAlignment="Top" HorizontalAlignment="Left">Rows</Label>
         <TextBox Text="{Binding Path=Rows}" Width="100" Height="20" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,25,0,0" ></TextBox>
         <Label VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,50,0,0">Columns</Label>
         <TextBox Text="{Binding Path=Columns}" Width="100" Height="20" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,75,0,0"></TextBox>
         <Label VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,100,0,0">Delay</Label>
         <TextBox Text="{Binding Path=Delay}" Width="100" Height="20" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,125,0,0"></TextBox>
-        <Button Width="50" Height="20" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,150,0,0" Click="InitializeGrid">Initialize Grid</Button>
+        <ComboBox x:Name="Algorithms" Width="100" Height="20" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,150,0,0">
+            <ComboBoxItem IsSelected="True">A*</ComboBoxItem>
+            <ComboBoxItem>BFS</ComboBoxItem>
+            <ComboBoxItem>DFS</ComboBoxItem>
+        </ComboBox>
+        <Button Width="87" Height="24" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,204,0,0" Click="InitializeGrid">Initialize Grid</Button>
         <UniformGrid x:Name="Grid" Width="500">
 
         </UniformGrid>
-        <Button Click="Search_Click" Width="50" Height="21" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,201,0,0" Content="Search"/>
+        <Button Click="Search_Click" Width="87" Height="25" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,265,0,0" Content="Search"/>
     </Grid>
 
 </Window>

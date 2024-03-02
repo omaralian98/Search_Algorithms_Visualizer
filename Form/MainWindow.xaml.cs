@@ -12,15 +12,20 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using Search_Algorithms.Algorithms;
+using Search_Algorithms;
 using System.Globalization;
 using System.Drawing;
 using System.Reflection;
+using System.Threading;
+using System.Windows.Threading;
+using SearchAlgorithms.Algorithms;
 
 namespace Form;
-public enum CellColor
+public enum CellColour
 {
     Default,
     Visited,
+    Dicovered,
     Start,
     Target,
     Obstacle,
@@ -45,6 +50,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = this;
+        if (WindowState == WindowState.Maximized) Window_StateChanged(new object(), new EventArgs());
     }
 
     private void ResetGrid()
@@ -57,7 +63,7 @@ public partial class MainWindow : Window
         Grid.Children.Clear();
     }
 
-    public async void InitializeGrid(object sender, RoutedEventArgs e)
+    public void InitializeGrid(object sender, RoutedEventArgs e)
     {
         ResetGrid();
         Grid.Rows = Rows;
@@ -65,99 +71,103 @@ public partial class MainWindow : Window
         grid = new Search_Algorithms.Games.Shortest_Path.Grid(Rows, Columns);
         foreach (var cell in grid.GridStates)
         {
-            Label label = new()
+            Dispatcher.Invoke(DispatcherPriority.Normal, () =>
             {
-                Name = $"D{cell.X}D{cell.Y}",
-                BorderThickness = new Thickness(1),
-            };
-            label.MouseDown += SetCells_Click;
-            label.MouseEnter += MouseDrag;
-            cell.PropertyChanged += (sender, e) =>
-            {
-                if (e.PropertyName == nameof(cell.IsVisited))
+                Label label = new()
                 {
-                    label.Dispatcher.Invoke(() =>
+                    Name = $"D{cell.X}D{cell.Y}",
+                    BorderThickness = new Thickness(1),
+                };
+                label.MouseDown += SetCells_Click;
+                label.MouseEnter += MouseDrag;
+                cell.PropertyChanged += (sender, e) =>
+                {
+                    if (e.PropertyName == nameof(cell.State))
                     {
-                        SetCellBackground(label, cell.IsVisited ? CellColor.Visited : CellColor.Default);
-                    });
-                }
-            };
-            SetCellBackground(label, CellColor.Default);
-            Grid.Children.Add(label);
-            await Task.Delay(0);
+                        label.Dispatcher.Invoke(Delay == 0 ? DispatcherPriority.Background : DispatcherPriority.Normal, () =>
+                        {
+                            switch (cell.State)
+                            {
+                                case SearchState.Default:
+                                    SetCellBackground(label, CellColour.Default);
+                                    break;
+                                case SearchState.Discoverd:
+                                    SetCellBackground(label, CellColour.Dicovered);
+                                    break;
+                                case SearchState.Visited:
+                                    SetCellBackground(label, CellColour.Visited);
+                                    break;
+                                case SearchState.Path:
+                                    SetCellBackground(label, CellColour.Path);
+                                    break;
+                            }
+                        });
+                    }
+                    if (e.PropertyName == nameof(cell.IsObstacle))
+                    {
+                        label.Dispatcher.Invoke(() =>
+                        {
+                            switch (cell.IsObstacle)
+                            {
+                                case true:
+                                    SetCellBackground(label, CellColour.Obstacle);
+                                    break;
+                                case false:
+                                    SetCellBackground(label, CellColour.Default);
+                                    break;
+                            }
+                        });
+                    }
+                };
+                SetCellBackground(label, CellColour.Default);
+                Grid.Children.Add(label);
+            });
+
         }
-        SetStart_Click(0, 0);
-        SetTarget_Click(Rows - 1, Columns - 1);
+
+        SetCells_Click(Grid.Children[0], new RoutedEventArgs());
+        SetCells_Click(Grid.Children[^1], new RoutedEventArgs());
     }
 
-    private void SetTarget_Click(int x, int y)
-    {
-        Coordinates temp = new(x, y);
-        var label = (Label)Grid.Children[(x * Grid.Columns) + y];
-        if (temp == Target)
-        {
-            Target = new Coordinates(-1, -1);
-            IsTargetSet = false;
-            SetCellBackground(label, CellColor.Default);
-        }
-        else
-        {
-            Target = temp;
-            IsTargetSet = true;
-            SetCellBackground(label, CellColor.Target);
-        }
-    }
-    private void SetStart_Click(int x, int y)
-    {
-        Coordinates temp = new(x, y);
-        var label = (Label)Grid.Children[(x * Grid.Columns) + y];
-        if (temp == Start)
-        {
-            Start = new Coordinates(-1, -1);
-            IsStartSet = false;
-            SetCellBackground(label, CellColor.Default);
-        }
-        else
-        {
-            Start = temp;
-            IsStartSet = true;
-            SetCellBackground(label, CellColor.Start);
-        }
-    }
-
-    private void SetCellBackground(Label label, CellColor color)
+    private void SetCellBackground(Label label, CellColour color)
     {
         switch (color)
         {
-            case CellColor.Default:
-                label.Background = Brushes.Red;
+            case CellColour.Default:
+                label.Background = Brushes.White;
                 break;
-            case CellColor.Visited:
+            case CellColour.Visited:
                 label.Background = Brushes.Green;
                 break;
-            case CellColor.Start:
+            case CellColour.Dicovered:
+                label.Background = Brushes.DarkCyan;
+                break;
+            case CellColour.Start:
                 label.Background = Brushes.Blue;
                 break;
-            case CellColor.Target:
+            case CellColour.Target:
                 label.Background = Brushes.Purple;
                 break;
-            case CellColor.Obstacle:
+            case CellColour.Obstacle:
                 label.Background = Brushes.Black;
                 break;
-            case CellColor.Path:
-                label.Background = Brushes.Gold;
+            case CellColour.Path:
+                Dispatcher.Invoke(DispatcherPriority.Background, () =>
+                {
+                    label.Background = Brushes.Gold;
+                });
                 break;
             default:
                 break;
         }
     }
-    private CancellationTokenSource cancellationTokenSource;
+    private CancellationTokenSource? cancellationTokenSource;
 
     private async void Search_Click(object sender, RoutedEventArgs e)
     {
-        if (!IsGridInitialized)
+        if (!IsGridInitialized || !IsStartSet || !IsTargetSet)
         {
-            MessageBox.Show("You should create a grid first", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show("You should initialize the grid, add start point and Target first", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
         if (cancellationTokenSource != null && !cancellationTokenSource.Token.IsCancellationRequested)
@@ -166,42 +176,52 @@ public partial class MainWindow : Window
             ((Button)sender).Content = "Search";
             return;
         }
+        ClearGrid(KeepObstacles: true);
         ((Button)sender).Content = "Cancel";
         cancellationTokenSource = new CancellationTokenSource();
         grid.Start = grid.GridStates[Start.X, Start.Y];
         grid.End = new GridState(Target.X, Target.Y, grid);
-        AStarSearch<GridState> aStar = new();
 
         try
         {
-            var value = await aStar.FindPath(grid.Start, Search_Algorithms.Games.Shortest_Path.Grid.ManhattanDistance, delay: Convert.ToInt32(Delay * 1000), token: cancellationTokenSource.Token);
-            foreach (var cell in value.Steps)
+            SearchResult<ISearchable> res = new();
+            switch (Algorithms.SelectedIndex)
             {
-                var lab = (Label)Grid.Children[(cell.X * Grid.Columns) + cell.Y];
-                SetCellBackground(lab, CellColor.Path);
+                case 0:
+                    AStarSearch aStar = new();
+                    res = await aStar.FindPath(grid.Start, Search_Algorithms.Games.Shortest_Path.Grid.ManhattanDistance,delay: Convert.ToInt32(Delay * 1000), token: cancellationTokenSource.Token);
+                    break;
+                case 1:
+                    Breadth_First_Search breadth = new();
+                    res = await breadth.FindPath(grid.Start, delay: Convert.ToInt32(Delay * 1000), cancellationTokenSource.Token);
+                    break;
+                case 2:
+                    Depth_First_Search depth = new();
+                    res = await depth.FindPath(grid.Start, delay: Convert.ToInt32(Delay * 1000), cancellationTokenSource.Token);
+                    break;
             }
-            ((Button)sender).Content = "Search";
+            MessageBox.Show($"{res.Steps.Count}");
         }
         catch (OperationCanceledException)
         {
-            foreach (var cell in grid.GridStates)
-            {
-                cell.IsVisited = false;
-            }
-            var temp = Start;
-            SetStart_Click(Start.X , Start.Y);
-            SetStart_Click(temp.X, temp.Y);
+            ClearGrid(KeepObstacles: true);
         }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        cancellationTokenSource = null;
+        ((Button)sender).Content = "Search";
     }
 
     private void AddRandomObstacles(object sender, RoutedEventArgs e)
     {
-        ClearObstacles();
         if (!IsGridInitialized || !IsStartSet || !IsTargetSet)
         {
-            MessageBox.Show("You should initialize the grid, add start point and Target first");
+            MessageBox.Show("You should initialize the grid, add start point and Target first", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
+        ClearGrid();
 
         Random random = new Random();
         int obstacleCount = 0; // Number of obstacles you want to add
@@ -216,7 +236,6 @@ public partial class MainWindow : Window
             // Check if the cell is already an obstacle
             if (!grid.GridStates[randomRow, randomCol].IsObstacle && Start != co && Target != co)
             {
-                grid.GridStates[randomRow, randomCol].IsObstacle = true;
                 SetCells_Click(Grid.Children[(randomRow * Grid.Columns) + randomCol], new RoutedEventArgs());
                 obstacleCount++;
             }
@@ -224,29 +243,28 @@ public partial class MainWindow : Window
     }
 
 
-    private void ClearObstacles()
+    private void ClearGrid(bool KeepObstacles = false)
     {
+        var temp = Delay;
+        Delay = 1;
         foreach (var cell in grid.GridStates)
         {
-            cell.IsObstacle = false;
-            cell.IsVisited = false;
-        }
-        foreach (Label cell in Grid.Children)
-        {
-            var co = GetCoordinates(cell.Name);
-            if (co != Start && co != Target)
+            if (cell.X == Start.X && cell.Y == Start.Y)
             {
-                SetCellBackground(cell, CellColor.Default);
-            } 
-            else if (co == Start)
-            {
-                SetCellBackground(cell, CellColor.Start);
+                SetCellBackground((Label)Grid.Children[cell.X * Columns + cell.Y], CellColour.Start);
+
             }
-            else if (co == Target)
+            else if (cell.X == Target.X && cell.Y == Target.Y)
             {
-                SetCellBackground(cell, CellColor.Target);
+                SetCellBackground((Label)Grid.Children[cell.X * Columns + cell.Y], CellColour.Target);
+            }
+            else 
+            {
+                if (!KeepObstacles) cell.IsObstacle = false;
+                cell.State = SearchState.Default;
             }
         }
+        Delay = temp;
     }
 
 
@@ -261,9 +279,9 @@ public partial class MainWindow : Window
 
     private void ResetStart_Click(object sender, RoutedEventArgs e)
     {
-        Start = new(0, 0);
+        Start = new(-1, -1);
         var lab = (Label)sender;
-        lab.Background = Brushes.Red;
+        SetCellBackground(lab, CellColour.Default);
         lab.MouseDown -= ResetStart_Click;
         lab.MouseDown += SetCells_Click;
         IsStartSet = false;
@@ -271,18 +289,58 @@ public partial class MainWindow : Window
 
     private void ResetTarget_Click(object sender, RoutedEventArgs e)
     {
-        Target = new(Rows - 1, Columns - 1);
+        Target = new(-1, -1);
         var lab = (Label)sender;
-        lab.Background = Brushes.Red;
+        SetCellBackground(lab, CellColour.Default);
         lab.MouseDown -= ResetTarget_Click;
         lab.MouseDown += SetCells_Click;
         IsTargetSet = false;
     }
 
-    private void ResetCell_Click(Label cell)
+    private void SetTarget_Click(int x, int y)
     {
-
+        Coordinates temp = new(x, y);
+        var label = (Label)Grid.Children[(x * Grid.Columns) + y];
+        if (temp == Target)
+        {
+            Target = new Coordinates(-1, -1);
+            IsTargetSet = false;
+            SetCellBackground(label, CellColour.Default);
+            label.MouseDown += SetCells_Click;
+            label.MouseDown -= ResetTarget_Click;
+        }
+        else
+        {
+            Target = temp;
+            IsTargetSet = true;
+            SetCellBackground(label, CellColour.Target);
+            label.MouseDown -= SetCells_Click;
+            label.MouseDown += ResetTarget_Click;
+        }
     }
+
+    private void SetStart_Click(int x, int y)
+    {
+        Coordinates temp = new(x, y);
+        var label = (Label)Grid.Children[(x * Grid.Columns) + y];
+        if (temp == Start)
+        {
+            Start = new Coordinates(-1, -1);
+            IsStartSet = false;
+            SetCellBackground(label, CellColour.Default);
+            label.MouseDown += SetCells_Click;
+            label.MouseDown -= ResetStart_Click;
+        }
+        else
+        {
+            Start = temp;
+            IsStartSet = true;
+            SetCellBackground(label, CellColour.Start);
+            label.MouseDown -= SetCells_Click;
+            label.MouseDown += ResetStart_Click;
+        }
+    }
+
 
     private void SetCells_Click(object sender, RoutedEventArgs e) 
     {
@@ -291,28 +349,27 @@ public partial class MainWindow : Window
 
         if (!IsStartSet)
         {
-            SetCellBackground(lab, CellColor.Start);
-            Start = coordinate;
-            lab.MouseDown -= SetCells_Click;
-            lab.MouseDown += ResetStart_Click;
-            IsStartSet = true;
+            SetStart_Click(coordinate.X, coordinate.Y);
         }
         else if (!IsTargetSet)
         {
-            SetCellBackground(lab, CellColor.Target);
-            Target = coordinate;
-            lab.MouseDown -= SetCells_Click;
-            lab.MouseDown += ResetTarget_Click;
-            IsTargetSet = true;
+            SetTarget_Click(coordinate.X, coordinate.Y);
         }
         else if(coordinate != Start && coordinate != Target)
         {
-            SetCellBackground(lab, CellColor.Obstacle);
-            grid.SetObstacle(coordinate.X, coordinate.Y);
+            if (grid.GridStates[coordinate.X, coordinate.Y].IsObstacle)
+            {
+                grid.GridStates[coordinate.X, coordinate.Y].IsObstacle = false;
+            }
+            else
+            {
+                grid.GridStates[coordinate.X, coordinate.Y].State = SearchState.Default;
+                grid.GridStates[coordinate.X, coordinate.Y].IsObstacle = true; 
+            }
         }
     }
 
-    private Coordinates GetCoordinates(string a)
+    private static Coordinates GetCoordinates(string a)
     {
         var str = a[1..].Split('D');
         return new Coordinates(int.Parse(str[0]), int.Parse(str[1]));
@@ -321,6 +378,17 @@ public partial class MainWindow : Window
     private async void Window_StateChanged(object sender, EventArgs e)
     {
         if (WindowState.Maximized == this.WindowState)
+        {
+            await Task.Run(() =>
+            {
+                Thread.Sleep(1);
+                Dispatcher.Invoke(() =>
+                {
+                    Grid.Width = Grid.ActualHeight;
+                });
+            });
+        }
+        else if (WindowState == WindowState.Normal)
         {
             await Task.Run(() =>
             {

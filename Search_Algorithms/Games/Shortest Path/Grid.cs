@@ -23,11 +23,6 @@ public class Grid
         End = GridStates[rows - 1, columns - 1];
     }
 
-    public void SetObstacle(int x, int y)
-    {
-        GridStates[x, y].IsObstacle = true;
-    }
-
     /// <summary>
     /// This function finds the manhattan distance between the board and the goal board
     /// </summary>

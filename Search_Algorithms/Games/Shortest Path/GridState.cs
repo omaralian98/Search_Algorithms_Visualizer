@@ -2,12 +2,36 @@
 
 namespace Search_Algorithms.Games.Shortest_Path;
 
-
 public class GridState : ISearchable, INotifyPropertyChanged
 {
     public int X { get; set; }
     public int Y { get; set; }
-    public bool IsObstacle { get; set; }
+    private SearchState _State { get; set; } = SearchState.Default;
+    public SearchState State
+    {
+        get { return _State; }
+        set
+        {
+            if (value != _State)
+            {
+                _State = value;
+                OnPropertyChanged(nameof(State));
+            }
+        }
+    }
+    private bool _IsObstacle { get; set; } = false;
+    public bool IsObstacle
+    {
+        get { return _IsObstacle; }
+        set
+        {
+            if (value != _IsObstacle)
+            {
+                _IsObstacle = value;
+                OnPropertyChanged(nameof(IsObstacle));
+            }
+        }
+    }
     public Grid Grid { get; set; }
 
     public GridState(int x, int y, Grid grid)
@@ -18,31 +42,10 @@ public class GridState : ISearchable, INotifyPropertyChanged
     }
 
     public event PropertyChangedEventHandler PropertyChanged;
-    private bool isVisited;
-    public bool IsVisited
-    {
-        get { return isVisited; }
-        set
-        {
-            if (value != isVisited)
-            {
-                isVisited = value;
-                OnPropertyChanged(nameof(IsVisited));
-            }
-        }
-    }
 
     private void OnPropertyChanged(string propertyName)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    }
-
-    public async Task VisitStateAsync()
-    {
-        await Task.Delay(100); // Simulating an asynchronous operation
-
-        // Update the IsVisited property to true
-        IsVisited = true;
     }
 
 

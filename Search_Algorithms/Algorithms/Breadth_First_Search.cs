@@ -1,29 +1,34 @@
-﻿using Search_Algorithms;
+﻿namespace Search_Algorithms.Algorithms;
 
-namespace SearchAlgorithms.Algorithms
+public class Breadth_First_Search
 {
-    public class Breadth_First_Search<TSearch> where TSearch : ISearchable
+    /// <summary>
+    /// This function finds the shortest path for any game state using BFS.
+    /// </summary>
+    /// <param name="initial">The initial state</param>
+    /// <returns></returns>
+    public async Task<SearchResult<ISearchable>> FindPath(ISearchable initial, int delay = 0, CancellationToken token = default)
     {
-        /// <summary>
-        /// This function finds the shortest path for any game state using BFS.
-        /// </summary>
-        /// <param name="initial">The initial state</param>
-        /// <returns></returns>
-        public (List<TSearch>, long, long) FindPath(TSearch initial)
+        long DiscoveredNodes = 1;
+        long VisitedNodes = 1;
+        Queue<ISearchable> queue = new();
+        HashSet<string> visited = [];
+
+        queue.Enqueue(initial);
+        visited.Add(initial.ToString());
+
+        ISearchable? result = await Task.Run(() =>
         {
-            long DiscoveredNodes = 1;
-            long VisitedNodes = 1;
-            Queue<(TSearch, List<TSearch>)> queue = new Queue<(TSearch, List<TSearch>)>();
-            HashSet<string> visited = new HashSet<string>();
-
-            queue.Enqueue((initial, new List<TSearch>()));
-            visited.Add(initial.ToString());
-
             while (queue.Count > 0)
             {
-                var (current, path) = queue.Dequeue();
+                Thread.Sleep(delay);
+                var current= queue.Dequeue();
+                current.State = SearchState.Visited;
 
-                if (current.IsOver()) return (path, DiscoveredNodes, VisitedNodes); // Return the path when the solution is found
+                if (current.IsOver())
+                {
+                    return Task.FromResult(current);
+                }
 
                 VisitedNodes++;
 
@@ -31,19 +36,22 @@ namespace SearchAlgorithms.Algorithms
                 {
                     if (!visited.Contains(next.ToString()))
                     {
+                        next.State = SearchState.Discoverd;
                         visited.Add(next.ToString());
-
-                        // Copies the previous path and adds next to the new path
-                        List<TSearch> newPath = new List<TSearch>(path);
-                        newPath.Add((TSearch)next);
-
-                        queue.Enqueue(((TSearch, List<TSearch>))(next, newPath));
+                        queue.Enqueue(next);
+                        next.Parent = current;
                         DiscoveredNodes++;
                     }
                 }
             }
+            return null;
+        });
 
-            return (new List<TSearch>(), DiscoveredNodes, VisitedNodes); // Return empty List if no solution is found
-        }
+        return new SearchResult<ISearchable>
+        {
+            Steps = result.ConstructPath(),
+            DiscoveredNodes = DiscoveredNodes,
+            VisitedNodes = VisitedNodes
+        };
     }
 }

@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
+﻿namespace Search_Algorithms.Algorithms;
 
-namespace Search_Algorithms.Algorithms;
-public class AStarSearch<TSearch> where TSearch : ISearchable
+public class AStarSearch
 {
-    public delegate int MyFunction(TSearch game);
+    public delegate int MyFunction(ISearchable game);
 
     /// <summary>
     /// This function finds the shortest path for any game state using A*.
@@ -12,31 +11,30 @@ public class AStarSearch<TSearch> where TSearch : ISearchable
     /// <param name="heuristic">the heuristic to be used</param>
     /// <returns>SearchResult</returns>
     /// <exception cref="OperationCanceledException"></exception>
-    public async Task<SearchResult<TSearch>> FindPath(TSearch initial, MyFunction heuristic, CancellationToken token = default, int delay = 0)
+    public async Task<SearchResult<ISearchable>> FindPath(ISearchable initial, MyFunction heuristic,int delay = 0, CancellationToken token = default)
     {
         long DiscoveredNodes = 1;
         long VisitedNodes = 1;
-        SortedList<int, TSearch> list = new(new DuplicateKeyComparer<int>());
+        SortedList<int, ISearchable> list = new(new DuplicateKeyComparer<int>());
         HashSet<string> visited = [];
         Dictionary<string, int> visitedWithCost = [];
-        Dictionary<TSearch, int> g = [];
+        Dictionary<ISearchable, int> g = [];
 
         list[0] = initial;
         visited.Add(initial.ToString());
         visitedWithCost[initial.ToString()] = 0;
         g[initial] = 0;
         initial.Parent = null;
-        initial.IsVisited = true;
-        Task del = Task.Delay(delay);
-        TSearch? result = await Task.Run(() =>
+        Task del = Task.Delay(delay, token);
+        ISearchable result = await Task.Run(() =>
         {
             while (list.Count > 0)
             {
                 Thread.Sleep(delay);
-                if (token.IsCancellationRequested) throw new TaskCanceledException("Operation was canceled.");
+                token.ThrowIfCancellationRequested();
                 VisitedNodes++;
-                TSearch current = list.Values[0];
-                current.IsVisited = true;
+                ISearchable current = list.Values[0];
+                current.State = SearchState.Visited;
                 if (current.IsOver())
                 {
                     return Task.FromResult(current);
@@ -44,12 +42,13 @@ public class AStarSearch<TSearch> where TSearch : ISearchable
 
                 list.RemoveAt(0);
 
-                foreach (TSearch next in current.GetAllPossibleStates())
+                foreach (ISearchable next in current.GetAllPossibleStates())
                 {
                     string newstr = next.ToString();
                     int newcost = heuristic(next) + g[current] + 1;
                     if ((visited.Contains(newstr) && visitedWithCost[newstr] > newcost) || !visited.Contains(newstr))
                     {
+                        next.State = SearchState.Discoverd;
                         visitedWithCost[newstr] = newcost;
                         visited.Add(newstr);
                         list[newcost] = next;
@@ -59,28 +58,15 @@ public class AStarSearch<TSearch> where TSearch : ISearchable
                     }
                 }
             }
-            return null;
+            throw new Exception("Operation Failed\nCouldn't find the shortest path");
         });
-        return new SearchResult<TSearch>
+
+        return new SearchResult<ISearchable>
         {
-            Steps = ConstructPath(result),
+            Steps = result.ConstructPath(),
             DiscoveredNodes = DiscoveredNodes,
             VisitedNodes = VisitedNodes
         };
-    }
-
-    private static List<TSearch> ConstructPath(TSearch init)
-    {
-        if (init is null) return [];
-        var path = new List<TSearch>();
-        while (init.Parent is not null)
-        {
-            path.Add(init);
-            init = (TSearch)init.Parent;
-        }
-        path.Add(init);
-        path.Reverse();
-        return path;
     }
 }
 
@@ -102,4 +88,24 @@ public class DuplicateKeyComparer<TKey> : IComparer<TKey> where TKey : IComparab
             return result;
     }
     #endregion
+}
+
+public static class Extension
+{
+
+    public static List<ISearchable> ConstructPath(this ISearchable init)
+    {
+        if (init is null) return [];
+        var path = new List<ISearchable>();
+        while (init.Parent is not null)
+        {
+            init.State = SearchState.Path;
+            path.Add(init);
+            init = init.Parent;
+        }
+        init.State = SearchState.Path;
+        path.Add(init);
+        path.Reverse();
+        return path;
+    }
 }

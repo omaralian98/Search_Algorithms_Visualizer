@@ -1,48 +1,58 @@
 ﻿using Search_Algorithms;
+using Search_Algorithms.Algorithms;
 
 namespace SearchAlgorithms.Algorithms;
 
-public class Depth_First_Search<TSearch> where TSearch : ISearchable
+public class Depth_First_Search
 {
     /// <summary>
     /// This function find the shortest path of any game using DFS.
     /// </summary>
     /// <param name="initial">The initial state</param>
-    /// <returns>
-    /// Tuple contains 3 items.
-    /// <br></br>
-    /// List of TSearch containing the moves of the shortest path.
-    /// <br></br>
-    /// The number of discovered nodes.
-    /// <br></br>
-    /// The number of visited nodes.
-    /// </returns>
-    public static (List<TSearch>, long, long) FindPath(TSearch initial)
+    /// <returns></returns>
+    public async Task<SearchResult<ISearchable>> FindPath(ISearchable initial, int delay = 0, CancellationToken token = default)
     {
         long DiscoveredNodes = 1;
         long VisitedNodes = 1;
-        Stack<(TSearch, List<TSearch>)> queue = [];
+        Stack<ISearchable> queue = [];
         HashSet<string> visited = [];
 
-        queue.Push((initial, []));
+        queue.Push(initial);
         visited.Add(initial.ToString());
-        while (queue.Count > 0)
+
+        ISearchable? result = await Task.Run(() => 
         {
-            var (current, path) = queue.Pop();
-            if (current.IsOver()) return (path, DiscoveredNodes, VisitedNodes); // Return the path when the solution is found
-            VisitedNodes++;
-            foreach (var next in current.GetAllPossibleStates())
+            while (queue.Count > 0)
             {
-                if (!visited.Contains(next.ToString()))
+                Thread.Sleep(delay);
+                var current= queue.Pop();
+                current.State = SearchState.Visited;
+
+                if (current.IsOver())
                 {
-                    visited.Add(next.ToString());
-                    //Copies the previous path and adds next to the new path
-                    List<TSearch> newPath = [.. path, (TSearch)next];
-                    queue.Push(((TSearch, List<TSearch>))(next, newPath));
-                    DiscoveredNodes++;
+                    return Task.FromResult(current);
+                }
+                VisitedNodes++;
+                foreach (var next in current.GetAllPossibleStates())
+                {
+                    if (!visited.Contains(next.ToString()))
+                    {
+                        next.State = SearchState.Discoverd;
+                        visited.Add(next.ToString());
+                        queue.Push(next);
+                        next.Parent = current;
+                        DiscoveredNodes++;
+                    }
                 }
             }
-        }
-        return ([], DiscoveredNodes, VisitedNodes); //Return empty List if no solution is found
+            return null;
+        });
+
+        return new SearchResult<ISearchable>
+        {
+            Steps = result.ConstructPath(),
+            DiscoveredNodes = DiscoveredNodes,
+            VisitedNodes = VisitedNodes
+        };
     }
 }
