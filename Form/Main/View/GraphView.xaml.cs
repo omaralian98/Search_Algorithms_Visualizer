@@ -22,7 +22,6 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Xml.Linq;
-using Grid = System.Windows.Controls.Grid;
 
 namespace Form.Main.View;
 
@@ -115,7 +114,6 @@ public partial class GraphView : UserControl
         }
         var node = graph.AddNode("N");
         NodesIndex.Add(node.Id, Graph.Children.Count);
-        Grid grid = new() { Width = 80, Height = 80};
         Button newNode = new()
         {
             Content = $"N{node.Id}",
@@ -123,10 +121,6 @@ public partial class GraphView : UserControl
             Width = 80,
             Height = 80,
         };
-        Ellipse ellipse1 = new() { Width = 20, Height = 20, Fill = Brushes.Red };
-
-        grid.Children.Add(newNode);
-        grid.Children.Add(ellipse1);
         SetNodeBackground(newNode, CellColour.Default);
         ApplyNodeStyleToButton(newNode);
         newNode.PreviewMouseDown += Node_PreviewMouseDown;
@@ -158,9 +152,9 @@ public partial class GraphView : UserControl
         };
 
         Point dropPosition = e.GetPosition(Graph);
-        Canvas.SetLeft(grid, dropPosition.X);
-        Canvas.SetTop(grid, dropPosition.Y);
-        Graph.Children.Add(grid);
+        Canvas.SetLeft(newNode, dropPosition.X);
+        Canvas.SetTop(newNode, dropPosition.Y);
+        Graph.Children.Add(newNode);
     }
 
     private Button? adornerBtn;
