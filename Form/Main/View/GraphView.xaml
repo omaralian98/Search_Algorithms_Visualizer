@@ -1,0 +1,36 @@
+﻿<UserControl x:Class="Form.Main.View.GraphView" DataContext="{Binding RelativeSource={RelativeSource Self}}"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Form.Main.View"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="50"/>
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <StackPanel x:Name="ToolBox" Grid.Column="0">
+            <Button PreviewMouseLeftButtonDown="DragElement" Content="N" Height="50"></Button>
+            <ToggleButton IsChecked="{Binding Path=IsAddLineClicked, Mode=TwoWay}" Height="50">L</ToggleButton>
+            <Button PreviewMouseLeftButtonDown="DragElement" Content="WL" Height="50"></Button>
+            <TextBox Text="{Binding Path=Delay}" Width="50" Height="20" HorizontalAlignment="Left"/>
+            <ComboBox x:Name="Algorithms" Height="20" HorizontalAlignment="Left" Width="50">
+                <ComboBoxItem IsSelected="True" ToolTip="A Star">A*</ComboBoxItem>
+                <ComboBoxItem ToolTip="Greedy Best-First Search">GBFS</ComboBoxItem>
+                <ComboBoxItem ToolTip="Breadth-First Search">BFS</ComboBoxItem>
+                <ComboBoxItem ToolTip="Depth-First Search">DFS</ComboBoxItem>
+                <ComboBoxItem>HC</ComboBoxItem>
+            </ComboBox>
+            <Button Click="Search_Click" Content="Search" Height="50"></Button>
+        </StackPanel>
+        <Canvas Background="White" x:Name="Graph" Grid.Column="1" AllowDrop="True" 
+                Drop="Graph_Drop" 
+                DragEnter="Graph_DragEnter"
+                MouseDown="Graph_MouseDown"
+                MouseMove="Graph_MouseMove">
+
+        </Canvas>
+    </Grid>
+</UserControl>

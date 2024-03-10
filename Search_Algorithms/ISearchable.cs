@@ -4,7 +4,7 @@
 public enum SearchState
 {
     Default,
-    Discoverd,
+    Discovered,
     Visited,
     Path
 }

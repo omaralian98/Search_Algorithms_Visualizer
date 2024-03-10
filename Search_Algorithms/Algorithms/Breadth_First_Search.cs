@@ -7,7 +7,7 @@ public class Breadth_First_Search
     /// </summary>
     /// <param name="initial">The initial state</param>
     /// <returns></returns>
-    public async Task<SearchResult<ISearchable>> FindPath(ISearchable initial, int delay = 0, CancellationToken token = default)
+    public static async Task<SearchResult<ISearchable>> FindPath(ISearchable initial, int delay = 0, CancellationToken token = default)
     {
         long DiscoveredNodes = 1;
         long VisitedNodes = 1;
@@ -22,6 +22,7 @@ public class Breadth_First_Search
             while (queue.Count > 0)
             {
                 Thread.Sleep(delay);
+                token.ThrowIfCancellationRequested();
                 var current= queue.Dequeue();
                 current.State = SearchState.Visited;
 
@@ -36,7 +37,7 @@ public class Breadth_First_Search
                 {
                     if (!visited.Contains(next.ToString()))
                     {
-                        next.State = SearchState.Discoverd;
+                        next.State = SearchState.Discovered;
                         visited.Add(next.ToString());
                         queue.Enqueue(next);
                         next.Parent = current;
