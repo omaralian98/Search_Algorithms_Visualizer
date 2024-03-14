@@ -13,7 +13,8 @@
         </Grid.ColumnDefinitions>
         <StackPanel x:Name="ToolBox" Grid.Column="0">
             <Button PreviewMouseLeftButtonDown="DragElement" Content="N" Height="50"></Button>
-            <ToggleButton IsChecked="{Binding Path=IsAddLineClicked, Mode=TwoWay}" Height="50">L</ToggleButton>
+            <ToggleButton Checked="AddLine_Checked" Tag="UL" IsChecked="{Binding Path=IsAddLineClicked, Mode=TwoWay}" Height="50">UL</ToggleButton>
+            <ToggleButton Checked="AddLine_Checked" Tag="DL" IsChecked="{Binding Path=IsAddLineClicked, Mode=TwoWay}" Height="50">DL</ToggleButton>
             <Button PreviewMouseLeftButtonDown="DragElement" Content="WL" Height="50"></Button>
             <TextBox Text="{Binding Path=Delay}" Width="50" Height="20" HorizontalAlignment="Left"/>
             <ComboBox x:Name="Algorithms" Height="20" HorizontalAlignment="Left" Width="50">
@@ -27,10 +28,8 @@
         </StackPanel>
         <Canvas Background="White" x:Name="Graph" Grid.Column="1" AllowDrop="True" 
                 Drop="Graph_Drop" 
-                DragEnter="Graph_DragEnter"
-                MouseDown="Graph_MouseDown"
-                MouseMove="Graph_MouseMove">
-
+                DragEnter="Graph_DragEnter">
+            
         </Canvas>
     </Grid>
 </UserControl>
