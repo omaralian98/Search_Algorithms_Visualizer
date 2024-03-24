@@ -13,8 +13,9 @@
         </Grid.ColumnDefinitions>
         <StackPanel x:Name="ToolBox" Grid.Column="0">
             <Button PreviewMouseLeftButtonDown="DragElement" Content="N" Height="50"></Button>
-            <ToggleButton Checked="AddLine_Checked" Tag="UL" IsChecked="{Binding Path=IsAddLineClicked, Mode=TwoWay}" Height="50">UL</ToggleButton>
-            <ToggleButton Checked="AddLine_Checked" Tag="DL" IsChecked="{Binding Path=IsAddLineClicked, Mode=TwoWay}" Height="50">DL</ToggleButton>
+            <ToggleButton Unchecked="AddLine_Checked" Checked="AddLine_Checked" Tag="UL" Height="50">UL</ToggleButton>
+            <ToggleButton Unchecked="AddLine_Checked" Checked="AddLine_Checked" Tag="DL" Height="50">DL</ToggleButton>
+            <ToggleButton Unchecked="DeleteEnable_Click" Checked="DeleteEnable_Click" Tag="Delete" Height="50">Delete</ToggleButton>
             <Button PreviewMouseLeftButtonDown="DragElement" Content="WL" Height="50"></Button>
             <TextBox Text="{Binding Path=Delay}" Width="50" Height="20" HorizontalAlignment="Left"/>
             <ComboBox x:Name="Algorithms" Height="20" HorizontalAlignment="Left" Width="50">

@@ -38,6 +38,7 @@ public class Node<T>(Graph<T> graph, int id, T data) : ISearchable, INotifyPrope
     {
         Neighbors.Add(new (neighbor, weight));
     }
+    public void ClearNeighbors() => Neighbors.Clear();
 
     public IEnumerable<ISearchable> GetAllPossibleStates()
     {

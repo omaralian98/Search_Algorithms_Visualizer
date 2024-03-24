@@ -19,6 +19,7 @@ public class Graph<T>
         Nodes.Add(newNode);
         return newNode;
     }
+    public void AddNode(Node<T> node) => Nodes.Add(node);
 
     public void AddEdge(int sourceId, int destinationId, int weight = 1)
     {
@@ -31,6 +32,15 @@ public class Graph<T>
         }
 
         sourceNode.AddNeighbor(destinationNode, weight);
+    }
+
+    public void DeleteEdge(int nodeId)
+    {
+        var node = GetNode(nodeId);
+        if (node is not null)
+        {
+            Nodes.Remove(node);
+        }
     }
 
     public Node<T>? GetNode(int id) => Nodes.FirstOrDefault(x => x.Id == id);
