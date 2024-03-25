@@ -42,7 +42,7 @@
         </StackPanel>
         <ContentControl Grid.Row="1"
                             Grid.Column="0"
-                            Content="{Binding GraphViewModel}"/>
+                            Content="{Binding CurrentView}"/>
     </Grid>
 
 </Window>
